@@ -1,6 +1,13 @@
 import argparse
 import random
 
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich import box
+
+console = Console()
+
 CODON_TO_AA = {
     'UUU': 'F', 'UUC': 'F',
     'UUA': 'L', 'UUG': 'L',
@@ -30,10 +37,10 @@ CODON_TO_AA = {
 }
 
 AA_NAMES = {
-    'F': 'Fenilalanina', 'L': 'Leucina',     'S': 'Serina',          'Y': 'Tirosina',
-    'C': 'Cisteina',     'W': 'Triptofano',  'P': 'Prolina',         'H': 'Histidina',
-    'Q': 'Glutamina',    'R': 'Arginina',    'I': 'Isoleucina',      'M': 'Metionina',
-    'T': 'Treonina',     'N': 'Asparagina',  'K': 'Lisina',          'V': 'Valina',
+    'F': 'Fenilalanina', 'L': 'Leucina',      'S': 'Serina',         'Y': 'Tirosina',
+    'C': 'Cisteina',     'W': 'Triptofano',   'P': 'Prolina',        'H': 'Histidina',
+    'Q': 'Glutamina',    'R': 'Arginina',     'I': 'Isoleucina',     'M': 'Metionina',
+    'T': 'Treonina',     'N': 'Asparagina',   'K': 'Lisina',         'V': 'Valina',
     'A': 'Alanina',      'D': 'Ac. aspartico','E': 'Ac. glutamico',  'G': 'Glicina',
 }
 
@@ -124,14 +131,15 @@ SEQUENCES = [
 
 
 def show_table():
-    print("\n" + "=" * 50)
-    print("Tabla del codigo genetico:")
-    print(f"{'CODON':<8} {'Letra':<8} {'Nombre'}")
-    print("-" * 50)
+    table = Table(title="Tabla del codigo genetico", box=box.ROUNDED, style="cyan")
+    table.add_column("Codon", style="bold yellow")
+    table.add_column("Letra", style="bold white")
+    table.add_column("Aminoacido", style="green")
     for codon, letra in CODON_TO_AA.items():
-        nombre = 'Stop' if letra == 'STOP' else AA_NAMES.get(letra, '')
-        print(f"{codon:<8} {letra:<8} {nombre}")
-    print("=" * 50 + "\n")
+        nombre = "Stop" if letra == "STOP" else AA_NAMES.get(letra, "")
+        style = "red" if letra == "STOP" else ""
+        table.add_row(codon, letra, nombre, style=style)
+    console.print(table)
 
 
 def transcribe(dna):
@@ -144,136 +152,138 @@ def anticodon(codon):
 
 def ask(prompt, correct, lives):
     while lives > 0:
-        answer = input(prompt).strip().upper()
+        answer = console.input(f"[bold cyan]{prompt}[/bold cyan]").strip().upper()
         if answer == 'TABLA':
             show_table()
             continue
         if answer == correct.upper():
             if lives == 1:
-                print("  Por poco! El organismo resiste.")
+                console.print("  [bold green]Por poco! El organismo resiste.[/bold green]")
             return True, lives
         lives -= 1
         if lives == 0:
-            print(f"  Incorrecto. La respuesta era: {correct}")
+            console.print(f"  [red]Incorrecto. La respuesta era: [bold]{correct}[/bold][/red]")
         elif lives == 1:
-            print(f"  Incorrecto. El organismo se debilita... es tu ultima oportunidad.")
+            console.print("  [red]Incorrecto. El organismo se debilita... es tu ultima oportunidad.[/red]")
         else:
-            print(f"  Incorrecto. Te quedan {lives} vida(s).")
+            console.print(f"  [yellow]Incorrecto. Te quedan {lives} vida(s).[/yellow]")
     return False, lives
 
 
 def show_sequence(seq, label, show_indices=True):
-    print(f"\n{label}:")
     if show_indices:
-        header = "Pos: | " + " | ".join(f"{i:<2}" for i in range(len(seq))) + " |"
-        bases  = "Base:| " + " | ".join(f"{b:<2}" for b in seq) + " |"
-        print(header)
-        print(bases)
+        table = Table(title=label, box=box.SIMPLE, style="dim")
+        table.add_column("Pos", style="dim")
+        for i in range(len(seq)):
+            table.add_column(str(i), style="bold yellow", justify="center")
+        table.add_row("Base", *list(seq))
+        console.print(table)
     else:
-        print(f"  {seq}")
+        console.print(f"\n[bold]{label}:[/bold] [yellow]{seq}[/yellow]")
 
 
 def choose_sequence(solved):
     options = random.sample(SEQUENCES, 3)
-    print("\nSe detectaron 3 genes que requieren ser expresados.")
-    print("Como ARN Polimerasa II, solo podras transcribir uno.")
-    print("Elige con sabiduria:\n")
+    console.print(Panel(
+        "[bold]Se detectaron 3 genes que requieren ser expresados.[/bold]\n"
+        "Como ARN Polimerasa II, solo podras transcribir uno.\n"
+        "Elige con sabiduria:",
+        style="cyan", box=box.ROUNDED
+    ))
     for i, seq in enumerate(options, 1):
-        resuelto = " (Resuelto)" if seq['nombre'] in solved else ""
-        print(f"  {i}. {seq['nombre']}{resuelto}")
-        print(f"     {seq['intro']}\n")
+        resuelto = " [bold green](Resuelto)[/bold green]" if seq['nombre'] in solved else ""
+        console.print(f"  [bold]{i}.[/bold] [white]{seq['nombre']}[/white]{resuelto}")
+        console.print(f"     [dim]{seq['intro']}[/dim]\n")
 
     while True:
-        choice = input("Que gen transcribes? (1-3): ").strip()
+        choice = console.input("[bold cyan]Que gen transcribes? (1-3): [/bold cyan]").strip()
         if choice in ('1', '2', '3'):
             return options[int(choice) - 1]
-        print("  Ingresa 1, 2 o 3.")
+        console.print("  [red]Ingresa 1, 2 o 3.[/red]")
 
 
 def part1_intro():
-    print("\n" + "=" * 50)
-    print("   RPG: TRAVESIA GENICA")
-    print("=" * 50)
-    print("""
+    console.print(Panel(
+        "[bold white]RPG: TRAVESIA GENICA[/bold white]",
+        style="bold cyan", box=box.DOUBLE, expand=False
+    ))
+    console.print("""
 Una alarma silenciosa recorre el organismo.
 
-Las seniales quimicas llegan al nucleo celular.
-Los factores de transcripcion se activan.
-El factor TFIID se une al promotor del gen
-y recluta a la ARN Polimerasa II...
+Las señales quimicas llegan al nucleo celular.
+Los factores de transcripcion se activan
+y se unen al promotor del gen,
+reclutando a la [bold cyan]ARN Polimerasa II[/bold cyan]...
 
-Esa sos vos.
+[bold white]Esa sos vos.[/bold white]
 
 El organismo depende de que hagas tu trabajo.
 """)
-    input("Presiona ENTER para comenzar...")
+    console.input("[dim]Presiona ENTER para comenzar...[/dim]")
 
 
 def part2_transcription(dna, lives):
-    print("\n" + "=" * 50)
-    print("   PARTE II: TRANSCRIPCION")
-    print("=" * 50)
-    print("\nTe posicionas en el promotor. La doble hebra de ADN se abre ante vos.")
-    print("Tu trabajo es sintetizar el ARN mensajero copiando la secuencia de ADN.")
-    print("\nRegla de transcripcion:")
-    print("  La Timina (T) del ADN se reemplaza por Uracilo (U) en el ARNm.")
-    print("  El resto de las bases (A, G, C) se copian igual.")
-    print("\nEjemplo: ATGCAT  ->  AUGCAU\n")
+    console.print(Panel("[bold]PARTE II: TRANSCRIPCION[/bold]", style="cyan", box=box.ROUNDED))
+    console.print("\nTe posicionas en el promotor. La doble hebra de ADN se abre ante vos.")
+    console.print("Tu trabajo es sintetizar el ARN mensajero copiando la secuencia de ADN.")
+    console.print(Panel(
+        "[bold]Regla de transcripcion:[/bold]\n"
+        "La [bold red]Timina (T)[/bold red] del ADN se reemplaza por [bold yellow]Uracilo (U)[/bold yellow] en el ARNm.\n"
+        "El resto de las bases (A, G, C) se copian igual.\n\n"
+        "[dim]Ejemplo: ATGCAT  ->  AUGCAU[/dim]",
+        box=box.ROUNDED, style="dim"
+    ))
 
     pre_mrna = transcribe(dna)
 
     while lives > 0:
         show_sequence(dna, "ADN a transcribir", show_indices=False)
-        answer = input("\nEscribi el ARNm resultante: ").strip().upper()
+        answer = console.input("\n[bold cyan]Escribi el ARNm resultante: [/bold cyan]").strip().upper()
 
         if answer == pre_mrna:
-            print(f"\nCorrecto! ARN pre-maduro sintetizado: {pre_mrna}")
-            print("Pero el ARN aun no esta listo para salir del nucleo. Debe ser procesado...\n")
+            console.print(f"\n[bold green]Correcto! ARN pre-maduro sintetizado:[/bold green] [yellow]{pre_mrna}[/yellow]")
+            console.print("[dim]Pero el ARN aun no esta listo para salir del nucleo. Debe ser procesado...[/dim]\n")
             return pre_mrna, lives
 
         lives -= 1
         if lives == 0:
-            print(f"  Incorrecto. La respuesta era: {pre_mrna}")
+            console.print(f"  [red]Incorrecto. La respuesta era: [bold]{pre_mrna}[/bold][/red]")
             return None, lives
 
         errors = [i for i in range(min(len(answer), len(pre_mrna))) if answer[i] != pre_mrna[i]]
         if len(answer) != len(pre_mrna):
-            print(f"  Incorrecto. La longitud no coincide (esperaba {len(pre_mrna)} bases, escribiste {len(answer)}).")
+            console.print(f"  [yellow]Incorrecto. La longitud no coincide (esperaba {len(pre_mrna)} bases, escribiste {len(answer)}).[/yellow]")
         else:
-            print(f"  Incorrecto. Hay {len(errors)} error(es) en las posiciones: {errors}")
+            console.print(f"  [yellow]Incorrecto. Hay {len(errors)} error(es) en las posiciones: {errors}[/yellow]")
         if lives == 1:
-            print("  El organismo se debilita... es tu ultima oportunidad.")
+            console.print("  [red]El organismo se debilita... es tu ultima oportunidad.[/red]")
         else:
-            print(f"  Te quedan {lives} vida(s).")
+            console.print(f"  [yellow]Te quedan {lives} vida(s).[/yellow]")
 
     return None, lives
 
 
 def part2b_splicing(pre_mrna, intron):
-    print("\n" + "=" * 50)
-    print("   PARTE III: SPLICING")
-    print("=" * 50)
-    print("\nEl ARN pre-maduro no puede salir del nucleo todavia.")
-    print("El spliceosoma, una maquinaria molecular gigante, lo reconoce")
-    print("e identifica las regiones no codificantes llamadas intrones.")
-    print(f"\nIntron detectado: {intron}")
-    print("El spliceosoma lo elimina y une los exones entre si.")
+    console.print(Panel("[bold]PARTE III: SPLICING[/bold]", style="cyan", box=box.ROUNDED))
+    console.print("\nEl ARN pre-maduro no puede salir del nucleo todavia.")
+    console.print("El [bold]espliceosoma[/bold], una maquinaria molecular gigante, lo reconoce")
+    console.print("e identifica las regiones no codificantes llamadas [bold red]intrones[/bold red].")
+    console.print(f"\n[bold]Intron detectado:[/bold] [red]{intron}[/red]")
+    console.print("El spliceosoma lo elimina y une los [bold green]exones[/bold green] entre si.")
 
     mature_mrna = pre_mrna.replace(intron, '', 1)
-    print(f"\nARN pre-maduro: {pre_mrna}")
-    print(f"ARNm maduro:    {mature_mrna}")
-    print("\nEl ARNm maduro sale del nucleo hacia el ribosoma...\n")
-    input("Presiona ENTER para continuar...")
+    console.print(f"\n[dim]ARN pre-maduro:[/dim] [yellow]{pre_mrna}[/yellow]")
+    console.print(f"[dim]ARNm maduro:   [/dim] [bold green]{mature_mrna}[/bold green]")
+    console.print("\n[dim]El ARNm maduro sale del nucleo hacia el ribosoma...[/dim]\n")
+    console.input("[dim]Presiona ENTER para continuar...[/dim]")
 
     return mature_mrna
 
 
 def part3_translation(arnm, lives):
-    print("\n" + "=" * 50)
-    print("   PARTE IV: TRADUCCION")
-    print("=" * 50)
-    print("\nEl ARNm maduro llega al ribosoma. La maquinaria de traduccion se ensambla.")
-    print("El ribosoma recorre el ARNm en busca del codon de inicio AUG...\n")
+    console.print(Panel("[bold]PARTE IV: TRADUCCION[/bold]", style="cyan", box=box.ROUNDED))
+    console.print("\nEl ARNm maduro llega al ribosoma. La maquinaria de traduccion se ensambla.")
+    console.print("El ribosoma recorre el ARNm en busca del codon de inicio [bold yellow]AUG[/bold yellow]...\n")
 
     show_sequence(arnm, "ARNm")
 
@@ -284,8 +294,8 @@ def part3_translation(arnm, lives):
         return [], lives
 
     aug_idx = int(aug_pos)
-    print(f"\nCorrecto! El ribosoma se ancla en la posicion {aug_pos}.")
-    print("La traduccion comienza. Cada codon reclutara a un ARNt portador de su aminoacido...\n")
+    console.print(f"\n[bold green]Correcto![/bold green] El ribosoma se ancla en la posicion {aug_pos}.")
+    console.print("La traduccion comienza. Cada codon reclutara a un ARNt portador de su aminoacido...\n")
 
     protein = []
     i = aug_idx
@@ -294,27 +304,27 @@ def part3_translation(arnm, lives):
         aa = CODON_TO_AA.get(codon)
 
         if aa == 'STOP':
-            print(f"Codon {codon} -> STOP.")
-            print("El ribosoma reconoce la senal de fin y se disocia del ARNm.")
-            print("La cadena polipeptidica es liberada y comienza a plegarse...\n")
+            console.print(f"[bold red]Codon {codon} -> STOP.[/bold red]")
+            console.print("El ribosoma reconoce la senal de fin y se disocia del ARNm.")
+            console.print("[dim]La cadena polipeptidica es liberada y comienza a plegarse...[/dim]\n")
             break
 
-        print(f"\n--- Codon: {codon} ---")
-        print("Un ARNt se acerca al ribosoma...")
+        console.print(f"\n[bold cyan]--- Codon: {codon} ---[/bold cyan]")
+        console.print("Un ARNt se acerca al ribosoma...")
         ok, lives = ask(f"Codon {codon}: que aminoacido trae el ARNt? (letra o 'tabla'): ", aa, lives)
         if not ok:
             break
 
-        print(f"  Correcto! {aa} = {AA_NAMES.get(aa, aa)}")
+        console.print(f"  [green]Correcto! {aa} = {AA_NAMES.get(aa, aa)}[/green]")
 
         anticodon_correcto = anticodon(codon)
-        print(f"  El ARNt tiene un anticodon complementario al codon del ARNm.")
-        print(f"  Regla de complementariedad: A <-> U  |  G <-> C")
+        console.print("  El ARNt tiene un anticodon [bold]complementario[/bold] al codon del ARNm.")
+        console.print("  Regla de complementariedad: [bold]A[/bold] <-> [bold]U[/bold]  |  [bold]G[/bold] <-> [bold]C[/bold]")
         ok, lives = ask(f"Codon {codon}: cual es el anticodon del ARNt? ", anticodon_correcto, lives)
         if not ok:
             break
 
-        print(f"  Correcto! El ARNt con anticodon {anticodon_correcto} deposita {AA_NAMES.get(aa, aa)} en la cadena.\n")
+        console.print(f"  [green]Correcto! El ARNt con anticodon {anticodon_correcto} deposita {AA_NAMES.get(aa, aa)} en la cadena.[/green]\n")
         protein.append(aa)
         i += 3
 
@@ -330,7 +340,7 @@ def main():
     difficulty = args.dificultad
     lives = 3 if difficulty == 'facil' else 1
 
-    print(f"\nDificultad: {difficulty.upper()} | Vidas: {lives}")
+    console.print(f"\n[bold]Dificultad:[/bold] {difficulty.upper()} | [bold]Vidas:[/bold] {lives}")
 
     part1_intro()
 
@@ -339,44 +349,52 @@ def main():
     while True:
         seq = choose_sequence(solved)
 
-        print(f"\nElegiste: {seq['nombre']}")
-        input("Presiona ENTER para iniciar la transcripcion...")
+        console.print(f"\n[bold]Elegiste:[/bold] [cyan]{seq['nombre']}[/cyan]")
+        console.input("[dim]Presiona ENTER para iniciar la transcripcion...[/dim]")
 
         current_lives = lives
         pre_mrna, current_lives = part2_transcription(seq['dna'], current_lives)
         if current_lives <= 0 or pre_mrna is None:
-            print("\n" + "=" * 50)
-            print("   GAME OVER")
-            print("=" * 50)
-            print("\nLa transcripcion fallo. El ARN nunca fue sintetizado.")
-            print("El organismo no pudo responder. La mision fracaso.\n")
+            console.print(Panel(
+                "[bold]GAME OVER[/bold]\n\n"
+                "La transcripcion fallo. El ARN nunca fue sintetizado.\n"
+                "El organismo no pudo responder. La mision fracaso.",
+                style="bold red", box=box.DOUBLE
+            ))
         else:
             mature_mrna = part2b_splicing(pre_mrna, seq['intron'])
 
             protein, current_lives = part3_translation(mature_mrna, current_lives)
             if current_lives <= 0:
-                print("\n" + "=" * 50)
-                print("   GAME OVER")
-                print("=" * 50)
-                print("\nLa traduccion fue interrumpida. La proteina quedo incompleta.")
-                print("El organismo no pudo recuperarse. La mision fracaso.\n")
+                console.print(Panel(
+                    "[bold]GAME OVER[/bold]\n\n"
+                    "La traduccion fue interrumpida. La proteina quedo incompleta.\n"
+                    "El organismo no pudo recuperarse. La mision fracaso.",
+                    style="bold red", box=box.DOUBLE
+                ))
             else:
-                print("\n" + "=" * 50)
-                print("   MISION CUMPLIDA!")
-                print("=" * 50)
-                print(f"\nProteina sintetizada: {''.join(protein)}")
-                print("\nAminoacidos:")
+                table = Table(title="Proteina sintetizada", box=box.ROUNDED, style="green")
+                table.add_column("Letra", style="bold white", justify="center")
+                table.add_column("Aminoacido", style="green")
                 for aa in protein:
-                    print(f"  {aa} -> {AA_NAMES.get(aa, aa)}")
-                print(f"\n{seq['ending']}")
-                print(f"\nVidas restantes: {current_lives}\n")
+                    table.add_row(aa, AA_NAMES.get(aa, aa))
+
+                console.print(Panel(
+                    f"[bold]MISION CUMPLIDA![/bold]\n\n{seq['ending']}",
+                    style="bold green", box=box.DOUBLE
+                ))
+                console.print(table)
+                console.print(f"\n[dim]Vidas restantes: {current_lives}[/dim]\n")
                 solved.add(seq['nombre'])
 
-        again = input("Queres jugar de nuevo? (s/n): ").strip().lower()
+        again = console.input("[bold cyan]Queres jugar de nuevo? (s/n): [/bold cyan]").strip().lower()
         if again != 's':
-            print("\nHasta la proxima. El organismo te lo agradece.\n")
+            console.print(Panel(
+                "[bold]Hasta la proxima.[/bold]\nEl organismo te lo agradece.",
+                style="cyan", box=box.ROUNDED
+            ))
             break
-        print()
+        console.print()
 
 
 if __name__ == '__main__':
