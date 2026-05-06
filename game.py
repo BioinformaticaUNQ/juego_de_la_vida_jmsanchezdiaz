@@ -207,6 +207,7 @@ def part1_intro():
         "[bold white]RPG: TRAVESIA GENICA[/bold white]",
         style="bold cyan", box=box.DOUBLE, expand=False
     ))
+    console.print(Panel("[bold]PARTE I: INTRODUCCION[/bold]", style="cyan", box=box.ROUNDED))
     console.print("""
 Una alarma silenciosa recorre el organismo.
 
@@ -263,13 +264,30 @@ def part2_transcription(dna, lives):
     return None, lives
 
 
-def part2b_splicing(pre_mrna, intron):
+def part2b_splicing(pre_mrna, intron, lives):
     console.print(Panel("[bold]PARTE III: SPLICING[/bold]", style="cyan", box=box.ROUNDED))
     console.print("\nEl ARN pre-maduro no puede salir del nucleo todavia.")
-    console.print("El [bold]espliceosoma[/bold], una maquinaria molecular gigante, lo reconoce")
-    console.print("e identifica las regiones no codificantes llamadas [bold red]intrones[/bold red].")
+    console.print("Una maquinaria molecular gigante lo reconoce")
+    console.print("e identifica las regiones no codificantes llamadas [bold red]intrones[/bold red].\n")
+
+    opciones = [
+        "Eliminar los intrones y unir los exones",
+        "Replicar el ADN en el nucleo",
+        "Sintetizar proteinas en el ribosoma",
+    ]
+    random.shuffle(opciones)
+    correcta = str(opciones.index("Eliminar los intrones y unir los exones") + 1)
+
+    console.print("[bold]Pregunta:[/bold] Cual es la funcion del [bold cyan]espliceosoma[/bold cyan]?\n")
+    for i, op in enumerate(opciones, 1):
+        console.print(f"  {i}. {op}")
+
+    ok, lives = ask("\nElegí (1-3): ", correcta, lives)
+    if not ok:
+        return None, lives
+
     console.print(f"\n[bold]Intron detectado:[/bold] [red]{intron}[/red]")
-    console.print("El spliceosoma lo elimina y une los [bold green]exones[/bold green] entre si.")
+    console.print("El espliceosoma lo elimina y une los [bold green]exones[/bold green] entre si.")
 
     mature_mrna = pre_mrna.replace(intron, '', 1)
     console.print(f"\n[dim]ARN pre-maduro:[/dim] [yellow]{pre_mrna}[/yellow]")
@@ -277,7 +295,7 @@ def part2b_splicing(pre_mrna, intron):
     console.print("\n[dim]El ARNm maduro sale del nucleo hacia el ribosoma...[/dim]\n")
     console.input("[dim]Presiona ENTER para continuar...[/dim]")
 
-    return mature_mrna
+    return mature_mrna, lives
 
 
 def part3_translation(arnm, lives):
@@ -362,30 +380,37 @@ def main():
                 style="bold red", box=box.DOUBLE
             ))
         else:
-            mature_mrna = part2b_splicing(pre_mrna, seq['intron'])
-
-            protein, current_lives = part3_translation(mature_mrna, current_lives)
-            if current_lives <= 0:
+            mature_mrna, current_lives = part2b_splicing(pre_mrna, seq['intron'], current_lives)
+            if current_lives <= 0 or mature_mrna is None:
                 console.print(Panel(
                     "[bold]GAME OVER[/bold]\n\n"
-                    "La traduccion fue interrumpida. La proteina quedo incompleta.\n"
-                    "El organismo no pudo recuperarse. La mision fracaso.",
+                    "El espliceosoma no pudo procesar el ARN.\n"
+                    "El organismo no pudo responder. La mision fracaso.",
                     style="bold red", box=box.DOUBLE
                 ))
             else:
-                table = Table(title="Proteina sintetizada", box=box.ROUNDED, style="green")
-                table.add_column("Letra", style="bold white", justify="center")
-                table.add_column("Aminoacido", style="green")
-                for aa in protein:
-                    table.add_row(aa, AA_NAMES.get(aa, aa))
+                protein, current_lives = part3_translation(mature_mrna, current_lives)
+                if current_lives <= 0:
+                    console.print(Panel(
+                        "[bold]GAME OVER[/bold]\n\n"
+                        "La traduccion fue interrumpida. La proteina quedo incompleta.\n"
+                        "El organismo no pudo recuperarse. La mision fracaso.",
+                        style="bold red", box=box.DOUBLE
+                    ))
+                else:
+                    table = Table(title="Proteina sintetizada", box=box.ROUNDED, style="green")
+                    table.add_column("Letra", style="bold white", justify="center")
+                    table.add_column("Aminoacido", style="green")
+                    for aa in protein:
+                        table.add_row(aa, AA_NAMES.get(aa, aa))
 
-                console.print(Panel(
-                    f"[bold]MISION CUMPLIDA![/bold]\n\n{seq['ending']}",
-                    style="bold green", box=box.DOUBLE
-                ))
-                console.print(table)
-                console.print(f"\n[dim]Vidas restantes: {current_lives}[/dim]\n")
-                solved.add(seq['nombre'])
+                    console.print(Panel(
+                        f"[bold]MISION CUMPLIDA![/bold]\n\n{seq['ending']}",
+                        style="bold green", box=box.DOUBLE
+                    ))
+                    console.print(table)
+                    console.print(f"\n[dim]Vidas restantes: {current_lives}[/dim]\n")
+                    solved.add(seq['nombre'])
 
         again = console.input("[bold cyan]Queres jugar de nuevo? (s/n): [/bold cyan]").strip().lower()
         if again != 's':
