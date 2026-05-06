@@ -164,7 +164,7 @@ def ask(prompt, correct, lives):
         if lives == 0:
             console.print(f"  [red]Incorrecto. La respuesta era: [bold]{correct}[/bold][/red]")
         elif lives == 1:
-            console.print("  [red]Incorrecto. El organismo se debilita... es tu ultima oportunidad.[/red]")
+            console.print("  [red]Incorrecto. El organismo se debilita... es tu ultima oportunidad. Te queda 1 vida.[/red]")
         else:
             console.print(f"  [yellow]Incorrecto. Te quedan {lives} vida(s).[/yellow]")
     return False, lives
@@ -415,7 +415,7 @@ def main():
         again = console.input("[bold cyan]Queres jugar de nuevo? (s/n): [/bold cyan]").strip().lower()
         if again != 's':
             console.print(Panel(
-                "[bold]Hasta la proxima.[/bold]\nEl organismo te lo agradece.",
+                "[bold]Hasta la proxima.[/bold]\nGracias por jugar :D",
                 style="cyan", box=box.ROUNDED
             ))
             break
