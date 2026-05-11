@@ -46,6 +46,10 @@ AA_NAMES = {
 
 COMPLEMENT = {'A': 'U', 'U': 'A', 'G': 'C', 'C': 'G'}
 
+def show_lives(lives, max_lives):
+    hearts = "[bold red]♥[/bold red]" * lives + "[dim]♡[/dim]" * (max_lives - lives)
+    console.print(f"  Vidas: {hearts}\n")
+
 SEQUENCES = [
     {
         "nombre": "Gen de reparacion de ADN",
@@ -155,7 +159,62 @@ def anticodon(codon):
     return ''.join(COMPLEMENT[b] for b in codon)
 
 
-def ask(prompt, correct, lives):
+def draw_helix(molde):
+    n           = len(molde)
+    full_width  = 2 * n - 1 + len("  5'─") + len("─3'  ← codificante (a descubrir)")
+    chunk       = n if console.width >= 80 and full_width <= console.width else 10
+
+    console.print()
+    for start in range(0, n, chunk):
+        m = molde[start:start + chunk]
+        c_row = "─".join(["?"] * len(m))
+        m_row = "─".join(m)
+        conn  = " ".join(["│"] * len(m))
+        console.print(f"  [bold]5'[/bold]─[dim]{c_row}[/dim]─[bold]3'[/bold]  [dim]← codificante (a descubrir)[/dim]")
+        console.print(f"     [dim]{conn}[/dim]")
+        console.print(f"  [bold]3'[/bold]─[cyan]{m_row}[/cyan]─[bold]5'[/bold]  [dim]← molde[/dim]")
+        console.print()
+
+
+def draw_splicing(pre_mrna, intron):
+    idx   = pre_mrna.find(intron)
+    exon1 = pre_mrna[:idx]
+    exon2 = pre_mrna[idx + len(intron):]
+    pad   = len("5'─[") + len(exon1)
+    cut   = "✂" + "─" * (len(intron) - 2) + "✂"
+    join  = "─" * (len(intron) + 2)
+
+    console.print()
+    console.print(f"  [dim]pre-mRNA:[/dim]  5'─[[bold green]{exon1}[/bold green]]─[[bold red]{intron}[/bold red]]─[[bold green]{exon2}[/bold green]]─3'")
+    console.print(f"             {' ' * pad}[dim]{cut}[/dim]  [dim]espliceosoma[/dim]")
+    console.print(f"             {' ' * pad}[dim]└{'─' * (len(intron) - 2)}┘[/dim]")
+    console.print()
+    console.print(f"  [dim]   mRNA:[/dim]  5'─[[bold green]{exon1}[/bold green]]{join}[[bold green]{exon2}[/bold green]]─3'")
+    console.print()
+
+
+def draw_trna(codon, anticodon_seq, aa_name):
+    w     = max(len(aa_name), 9)
+    name  = aa_name.center(w)
+    anti  = " ─ ".join(list(anticodon_seq))
+    cod   = " ─ ".join(list(codon))
+    conn  = " │   │   │"
+    wave  = "~" * (w + 4)
+
+    console.print()
+    console.print(f"  [bold cyan].─{'─' * w}─.[/bold cyan]")
+    console.print(f"  [bold cyan]│ {name} │[/bold cyan]")
+    console.print(f"  [bold cyan]'─{'─' * w}─'[/bold cyan]")
+    console.print(f"  [dim]{'│'.center(w + 4)}[/dim]")
+    console.print(f"  [yellow]{anti.center(w + 4)}[/yellow]   [dim]← anticodon[/dim]")
+    console.print(f"  [dim]{conn.center(w + 4)}[/dim]")
+    console.print(f"  [yellow]{cod.center(w + 4)}[/yellow]   [dim]← codon[/dim]")
+    console.print(f"  [dim]{wave}[/dim]")
+    console.print(f"  [dim]{'(ARNm)'.center(w + 4)}[/dim]")
+    console.print()
+
+
+def ask(prompt, correct, lives, max_lives=3):
     while lives > 0:
         answer = console.input(f"[bold cyan]{prompt}[/bold cyan]").strip().upper()
         if answer == 'TABLA':
@@ -166,12 +225,13 @@ def ask(prompt, correct, lives):
                 console.print("  [bold green]Por poco! El organismo resiste.[/bold green]")
             return True, lives
         lives -= 1
+        show_lives(lives, max_lives)
         if lives == 0:
             console.print(f"  [red]Incorrecto. La respuesta era: [bold]{correct}[/bold][/red]")
         elif lives == 1:
-            console.print("  [red]Incorrecto. El organismo se debilita... es tu ultima oportunidad. Te queda 1 vida.[/red]")
+            console.print("  [red]El organismo se debilita... es tu ultima oportunidad.[/red]")
         else:
-            console.print(f"  [yellow]Incorrecto. Te quedan {lives} vida(s).[/yellow]")
+            console.print(f"  [yellow]Incorrecto.[/yellow]")
     return False, lives
 
 
@@ -215,7 +275,7 @@ def part1_intro():
         "[bold white]RPG: TRAVESIA GENICA[/bold white]",
         style="bold cyan", box=box.DOUBLE, expand=False
     ))
-    console.print(Panel("[bold]PARTE I: INTRODUCCION[/bold]", style="cyan", box=box.ROUNDED))
+    console.print(Panel("[bold]PARTE I: INTRODUCCION[/bold]", style="cyan", box=box.ROUNDED, expand=False))
     console.print("""
 Una alarma silenciosa recorre el organismo.
 
@@ -232,7 +292,7 @@ El organismo depende de que hagas tu trabajo.
 
 
 def part2_transcription(dna, lives):
-    console.print(Panel("[bold]PARTE II: TRANSCRIPCION[/bold]", style="cyan", box=box.ROUNDED))
+    console.print(Panel("[bold]PARTE II: TRANSCRIPCION[/bold]", style="cyan", box=box.ROUNDED, expand=False))
     console.print("\nTe posicionas en el promotor. La doble hebra de ADN se abre ante vos.")
     console.print(Panel(
         "[bold]El ADN tiene dos hebras:[/bold]\n"
@@ -246,6 +306,8 @@ def part2_transcription(dna, lives):
 
     molde = dna_complement(dna)
     pre_mrna = transcribe(dna)
+
+    draw_helix(molde)
 
     def intentar(correct, paso, prompt_text, seq_label, seq):
         nonlocal lives
@@ -282,7 +344,7 @@ def part2_transcription(dna, lives):
 
 
 def part2b_splicing(pre_mrna, intron, lives):
-    console.print(Panel("[bold]PARTE III: SPLICING[/bold]", style="cyan", box=box.ROUNDED))
+    console.print(Panel("[bold]PARTE III: SPLICING[/bold]", style="cyan", box=box.ROUNDED, expand=False))
     console.print("\nEl ARN pre-maduro no puede salir del nucleo todavia.")
     console.print("Una maquinaria molecular gigante lo reconoce")
     console.print("e identifica las regiones no codificantes llamadas [bold red]intrones[/bold red].\n")
@@ -307,8 +369,7 @@ def part2b_splicing(pre_mrna, intron, lives):
     console.print("El espliceosoma lo elimina y une los [bold green]exones[/bold green] entre si.")
 
     mature_mrna = pre_mrna.replace(intron, '', 1)
-    console.print(f"\n[dim]ARN pre-maduro:[/dim] [yellow]{pre_mrna}[/yellow]")
-    console.print(f"[dim]ARNm maduro:   [/dim] [bold green]{mature_mrna}[/bold green]")
+    draw_splicing(pre_mrna, intron)
     console.print("\n[dim]El ARNm maduro sale del nucleo hacia el ribosoma...[/dim]\n")
     console.input("[dim]Presiona ENTER para continuar...[/dim]")
 
@@ -316,7 +377,7 @@ def part2b_splicing(pre_mrna, intron, lives):
 
 
 def part3_translation(arnm, lives):
-    console.print(Panel("[bold]PARTE IV: TRADUCCION[/bold]", style="cyan", box=box.ROUNDED))
+    console.print(Panel("[bold]PARTE IV: TRADUCCION[/bold]", style="cyan", box=box.ROUNDED, expand=False))
     console.print("\nEl ARNm maduro llega al ribosoma. La maquinaria de traduccion se ensambla.")
     console.print("El ribosoma recorre el ARNm en busca del codon de inicio [bold yellow]AUG[/bold yellow]...\n")
 
@@ -345,7 +406,10 @@ def part3_translation(arnm, lives):
             break
 
         console.print(f"\n[bold cyan]--- Codon: {codon} ---[/bold cyan]")
-        console.print("Un ARNt se acerca al ribosoma...")
+        prev = arnm[max(0, i-3):i]
+        nxt  = arnm[i+3:i+6]
+        console.print(f"  [dim]...{prev}[/dim][bold yellow]|{codon}|[/bold yellow][dim]{nxt}...[/dim]")
+        console.print("  Un ARNt se acerca al ribosoma...")
         ok, lives = ask(f"Codon {codon}: que aminoacido trae el ARNt? (letra o 'tabla'): ", aa, lives)
         if not ok:
             break
@@ -359,7 +423,7 @@ def part3_translation(arnm, lives):
         if not ok:
             break
 
-        console.print(f"  [green]Correcto! El ARNt con anticodon {anticodon_correcto} deposita {AA_NAMES.get(aa, aa)} en la cadena.[/green]\n")
+        draw_trna(codon, anticodon_correcto, AA_NAMES.get(aa, aa))
         protein.append(aa)
         i += 3
 
@@ -375,7 +439,9 @@ def main():
     difficulty = args.dificultad
     lives = 3 if difficulty == 'facil' else 1
 
-    console.print(f"\n[bold]Dificultad:[/bold] {difficulty.upper()} | [bold]Vidas:[/bold] {lives}")
+    max_lives = lives
+    console.print(f"\n[bold]Dificultad:[/bold] {difficulty.upper()} | ", end="")
+    show_lives(lives, max_lives)
 
     part1_intro()
 
@@ -415,6 +481,7 @@ def main():
                         style="bold red", box=box.DOUBLE
                     ))
                 else:
+                    chain = "-".join(f"[bold white][{aa}][/bold white]" for aa in protein)
                     table = Table(title="Proteina sintetizada", box=box.ROUNDED, style="green")
                     table.add_column("Letra", style="bold white", justify="center")
                     table.add_column("Aminoacido", style="green")
@@ -425,6 +492,7 @@ def main():
                         f"[bold]MISION CUMPLIDA![/bold]\n\n{seq['ending']}",
                         style="bold green", box=box.DOUBLE
                     ))
+                    console.print(f"\n  {chain}\n")
                     console.print(table)
                     console.print(f"\n[dim]Vidas restantes: {current_lives}[/dim]\n")
                     solved.add(seq['nombre'])
