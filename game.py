@@ -134,6 +134,14 @@ SEQUENCES = [
 ]
 
 
+def part_header(titulo, lives, max_lives, difficulty):
+    hearts = "♥" * lives + "♡" * (max_lives - lives)
+    console.print(Panel(
+        f"[bold]{titulo}[/bold]   {hearts}   [dim]{difficulty.upper()}[/dim]",
+        style="cyan", box=box.ROUNDED, expand=False
+    ))
+
+
 def show_table():
     table = Table(title="Tabla del codigo genetico", box=box.ROUNDED, style="cyan")
     table.add_column("Codon", style="bold yellow")
@@ -270,12 +278,12 @@ def choose_sequence(solved):
         console.print("  [red]Ingresa 1, 2 o 3.[/red]")
 
 
-def part1_intro():
+def part1_intro(lives, max_lives, difficulty):
     console.print(Panel(
         "[bold white]RPG: TRAVESIA GENICA[/bold white]",
         style="bold cyan", box=box.DOUBLE, expand=False
     ))
-    console.print(Panel("[bold]PARTE I: INTRODUCCION[/bold]", style="cyan", box=box.ROUNDED, expand=False))
+    part_header("PARTE I: INTRODUCCION", lives, max_lives, difficulty)
     console.print("""
 Una alarma silenciosa recorre el organismo.
 
@@ -291,8 +299,8 @@ El organismo depende de que hagas tu trabajo.
     console.input("[dim]Presiona ENTER para comenzar...[/dim]")
 
 
-def part2_transcription(dna, lives):
-    console.print(Panel("[bold]PARTE II: TRANSCRIPCION[/bold]", style="cyan", box=box.ROUNDED, expand=False))
+def part2_transcription(dna, lives, max_lives, difficulty):
+    part_header("PARTE II: TRANSCRIPCION", lives, max_lives, difficulty)
     console.print("\nTe posicionas en el promotor. La doble hebra de ADN se abre ante vos.")
     console.print(Panel(
         "[bold]El ADN tiene dos hebras:[/bold]\n"
@@ -343,8 +351,8 @@ def part2_transcription(dna, lives):
     return pre_mrna, lives
 
 
-def part2b_splicing(pre_mrna, intron, lives):
-    console.print(Panel("[bold]PARTE III: SPLICING[/bold]", style="cyan", box=box.ROUNDED, expand=False))
+def part2b_splicing(pre_mrna, intron, lives, max_lives, difficulty):
+    part_header("PARTE III: SPLICING", lives, max_lives, difficulty)
     console.print("\nEl ARN pre-maduro no puede salir del nucleo todavia.")
     console.print("Una maquinaria molecular gigante lo reconoce")
     console.print("e identifica las regiones no codificantes llamadas [bold red]intrones[/bold red].\n")
@@ -376,8 +384,8 @@ def part2b_splicing(pre_mrna, intron, lives):
     return mature_mrna, lives
 
 
-def part3_translation(arnm, lives):
-    console.print(Panel("[bold]PARTE IV: TRADUCCION[/bold]", style="cyan", box=box.ROUNDED, expand=False))
+def part3_translation(arnm, lives, max_lives, difficulty):
+    part_header("PARTE IV: TRADUCCION", lives, max_lives, difficulty)
     console.print("\nEl ARNm maduro llega al ribosoma. La maquinaria de traduccion se ensambla.")
     console.print("El ribosoma recorre el ARNm en busca del codon de inicio [bold yellow]AUG[/bold yellow]...\n")
 
@@ -443,7 +451,7 @@ def main():
     console.print(f"\n[bold]Dificultad:[/bold] {difficulty.upper()} | ", end="")
     show_lives(lives, max_lives)
 
-    part1_intro()
+    part1_intro(lives, max_lives, difficulty)
 
     solved = set()
 
@@ -454,7 +462,7 @@ def main():
         console.input("[dim]Presiona ENTER para iniciar la transcripcion...[/dim]")
 
         current_lives = lives
-        pre_mrna, current_lives = part2_transcription(seq['dna'], current_lives)
+        pre_mrna, current_lives = part2_transcription(seq['dna'], current_lives, max_lives, difficulty)
         if current_lives <= 0 or pre_mrna is None:
             console.print(Panel(
                 "[bold]GAME OVER[/bold]\n\n"
@@ -463,7 +471,7 @@ def main():
                 style="bold red", box=box.DOUBLE
             ))
         else:
-            mature_mrna, current_lives = part2b_splicing(pre_mrna, seq['intron'], current_lives)
+            mature_mrna, current_lives = part2b_splicing(pre_mrna, seq['intron'], current_lives, max_lives, difficulty)
             if current_lives <= 0 or mature_mrna is None:
                 console.print(Panel(
                     "[bold]GAME OVER[/bold]\n\n"
@@ -472,7 +480,7 @@ def main():
                     style="bold red", box=box.DOUBLE
                 ))
             else:
-                protein, current_lives = part3_translation(mature_mrna, current_lives)
+                protein, current_lives = part3_translation(mature_mrna, current_lives, max_lives, difficulty)
                 if current_lives <= 0:
                     console.print(Panel(
                         "[bold]GAME OVER[/bold]\n\n"

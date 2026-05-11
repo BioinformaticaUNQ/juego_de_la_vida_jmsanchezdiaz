@@ -36,21 +36,24 @@ sudo apt install python3 python3-pip
 sudo dnf install python3 python3-pip
 ```
 
-## Instalacion
-
-Una vez que tenés Python y pip, instalá la dependencia del juego:
-
-```bash
-python3 -m pip install rich
-```
-
 ## Como ejecutar
 
+Una vez que tenés Python instalado, corré:
+
 ```bash
+bash setup.sh
+```
+
+Esto crea el entorno virtual, instala las dependencias y lanza el juego automaticamente.
+
+Para volver a jugar despues del setup inicial:
+
+```bash
+source .venv/bin/activate
 python3 game.py
 ```
 
-Por defecto el juego corre en modo **facil** (3 vidas). Para modo **dificil** (1 vida):
+Para modo **dificil** (1 vida):
 
 ```bash
 python3 game.py --dificultad dificil
