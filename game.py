@@ -142,6 +142,11 @@ def show_table():
     console.print(table)
 
 
+DNA_COMPLEMENT = {'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G'}
+
+def dna_complement(seq):
+    return ''.join(DNA_COMPLEMENT[b] for b in seq)
+
 def transcribe(dna):
     return dna.replace('T', 'U')
 
@@ -172,12 +177,15 @@ def ask(prompt, correct, lives):
 
 def show_sequence(seq, label, show_indices=True):
     if show_indices:
-        table = Table(title=label, box=box.SIMPLE, style="dim")
-        table.add_column("Pos", style="dim")
-        for i in range(len(seq)):
-            table.add_column(str(i), style="bold yellow", justify="center")
-        table.add_row("Base", *list(seq))
-        console.print(table)
+        console.print(f"\n[bold]{label}:[/bold]")
+        chunk = 10
+        for start in range(0, len(seq), chunk):
+            bases = seq[start:start + chunk]
+            pos_row   = "  ".join(f"{start + i:<2}" for i in range(len(bases)))
+            bases_row = "  ".join(f"[bold yellow]{b}[/bold yellow] " for b in bases)
+            console.print(f"  [dim]{pos_row}[/dim]")
+            console.print(f"  {bases_row}")
+            console.print()
     else:
         console.print(f"\n[bold]{label}:[/bold] [yellow]{seq}[/yellow]")
 
@@ -226,42 +234,51 @@ El organismo depende de que hagas tu trabajo.
 def part2_transcription(dna, lives):
     console.print(Panel("[bold]PARTE II: TRANSCRIPCION[/bold]", style="cyan", box=box.ROUNDED))
     console.print("\nTe posicionas en el promotor. La doble hebra de ADN se abre ante vos.")
-    console.print("Tu trabajo es sintetizar el ARN mensajero copiando la secuencia de ADN.")
     console.print(Panel(
-        "[bold]Regla de transcripcion:[/bold]\n"
-        "La [bold red]Timina (T)[/bold red] del ADN se reemplaza por [bold yellow]Uracilo (U)[/bold yellow] en el ARNm.\n"
-        "El resto de las bases (A, G, C) se copian igual.\n\n"
-        "[dim]Ejemplo: ATGCAT  ->  AUGCAU[/dim]",
+        "[bold]El ADN tiene dos hebras:[/bold]\n"
+        "- [bold]Molde:[/bold] la hebra que lee la ARN Polimerasa II.\n"
+        "- [bold]Codificante:[/bold] la complementaria a la molde (A↔T, G↔C).\n\n"
+        "Paso 1: obtene la hebra codificante a partir de la molde.\n"
+        "Paso 2: transcribila a ARNm reemplazando [bold red]T[/bold red] por [bold yellow]U[/bold yellow].\n\n"
+        "[dim]Ejemplo  molde: TACGTA  ->  codificante: ATGCAT  ->  ARNm: AUGCAU[/dim]",
         box=box.ROUNDED, style="dim"
     ))
 
+    molde = dna_complement(dna)
     pre_mrna = transcribe(dna)
 
-    while lives > 0:
-        show_sequence(dna, "ADN a transcribir", show_indices=False)
-        answer = console.input("\n[bold cyan]Escribi el ARNm resultante: [/bold cyan]").strip().upper()
+    def intentar(correct, paso, prompt_text, seq_label, seq):
+        nonlocal lives
+        console.print(f"\n[bold]Paso {paso}:[/bold]")
+        show_sequence(seq, seq_label, show_indices=False)
+        while lives > 0:
+            answer = console.input(f"[bold cyan]{prompt_text}[/bold cyan]").strip().upper()
+            if answer == correct:
+                return True
+            lives -= 1
+            if lives == 0:
+                console.print(f"  [red]Incorrecto. La respuesta era: [bold]{correct}[/bold][/red]")
+            else:
+                errors = [i for i in range(min(len(answer), len(correct))) if answer[i] != correct[i]]
+                if len(answer) != len(correct):
+                    console.print(f"  [yellow]Incorrecto. La longitud no coincide (esperaba {len(correct)} bases, escribiste {len(answer)}).[/yellow]")
+                else:
+                    console.print(f"  [yellow]Incorrecto. Hay {len(errors)} error(es) en las posiciones: {errors}[/yellow]")
+                if lives == 1:
+                    console.print("  [red]El organismo se debilita... es tu ultima oportunidad. Te queda 1 vida.[/red]")
+                else:
+                    console.print(f"  [yellow]Te quedan {lives} vida(s).[/yellow]")
+        return False
 
-        if answer == pre_mrna:
-            console.print(f"\n[bold green]Correcto! ARN pre-maduro sintetizado:[/bold green] [yellow]{pre_mrna}[/yellow]")
-            console.print("[dim]Pero el ARN aun no esta listo para salir del nucleo. Debe ser procesado...[/dim]\n")
-            return pre_mrna, lives
+    if not intentar(dna, 1, "Hebra codificante (A↔T, G↔C): ", "Hebra molde", molde):
+        return None, lives
+    console.print(f"  [bold green]Correcto![/bold green] Hebra codificante: [yellow]{dna}[/yellow]")
 
-        lives -= 1
-        if lives == 0:
-            console.print(f"  [red]Incorrecto. La respuesta era: [bold]{pre_mrna}[/bold][/red]")
-            return None, lives
-
-        errors = [i for i in range(min(len(answer), len(pre_mrna))) if answer[i] != pre_mrna[i]]
-        if len(answer) != len(pre_mrna):
-            console.print(f"  [yellow]Incorrecto. La longitud no coincide (esperaba {len(pre_mrna)} bases, escribiste {len(answer)}).[/yellow]")
-        else:
-            console.print(f"  [yellow]Incorrecto. Hay {len(errors)} error(es) en las posiciones: {errors}[/yellow]")
-        if lives == 1:
-            console.print("  [red]El organismo se debilita... es tu ultima oportunidad.[/red]")
-        else:
-            console.print(f"  [yellow]Te quedan {lives} vida(s).[/yellow]")
-
-    return None, lives
+    if not intentar(pre_mrna, 2, "ARNm resultante (T→U): ", "Hebra codificante", dna):
+        return None, lives
+    console.print(f"\n[bold green]Correcto! ARN pre-maduro sintetizado:[/bold green] [yellow]{pre_mrna}[/yellow]")
+    console.print("[dim]Pero el ARN aun no esta listo para salir del nucleo. Debe ser procesado...[/dim]\n")
+    return pre_mrna, lives
 
 
 def part2b_splicing(pre_mrna, intron, lives):
