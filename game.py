@@ -185,11 +185,11 @@ def draw_splicing(pre_mrna, intron):
     join  = "─" * (len(intron) + 2)
 
     console.print()
-    console.print(f"  [dim]pre-mRNA:[/dim]  5'─[[bold green]{exon1}[/bold green]]─[[bold red]{intron}[/bold red]]─[[bold green]{exon2}[/bold green]]─3'")
+    console.print(f"  [dim]pre-ARNm:[/dim]  5'─[[bold green]{exon1}[/bold green]]─[[bold red]{intron}[/bold red]]─[[bold green]{exon2}[/bold green]]─3'")
     console.print(f"             {' ' * pad}[dim]{cut}[/dim]  [dim]espliceosoma[/dim]")
     console.print(f"             {' ' * pad}[dim]└{'─' * (len(intron) - 2)}┘[/dim]")
     console.print()
-    console.print(f"  [dim]   mRNA:[/dim]  5'─[[bold green]{exon1}[/bold green]]{join}[[bold green]{exon2}[/bold green]]─3'")
+    console.print(f"  [dim]   ARNm:[/dim]  5'─[[bold green]{exon1}[/bold green]]{join}[[bold green]{exon2}[/bold green]]─3'")
     console.print()
 
 

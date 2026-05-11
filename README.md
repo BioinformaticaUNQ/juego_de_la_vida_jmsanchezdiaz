@@ -2,12 +2,46 @@
 
 RPG de consola sobre expresion genica. El jugador toma el rol de la ARN Polimerasa II y debe transcribir y traducir secuencias de ADN para sintetizar proteinas.
 
-## Dependencias
+## Requisitos
 
-Requiere Python 3 y la libreria `rich`:
+- Python 3.6 o superior instalado
+- pip instalado
+
+### Como instalar Python y pip
+
+**Mac:**
+1. Descarga el instalador desde https://www.python.org/downloads/
+2. Ejecuta el instalador. pip se instala automaticamente junto con Python.
+3. Verificá que funcione abriendo la terminal y escribiendo:
+```bash
+python3 --version
+```
+
+**Windows:**
+1. Descarga el instalador desde https://www.python.org/downloads/
+2. Durante la instalacion, tilda la opcion **"Add Python to PATH"**.
+3. pip se instala automaticamente. Verificá con:
+```bash
+python --version
+```
+
+**Linux (Ubuntu/Debian):**
+```bash
+sudo apt update
+sudo apt install python3 python3-pip
+```
+
+**Linux (Fedora/RHEL):**
+```bash
+sudo dnf install python3 python3-pip
+```
+
+## Instalacion
+
+Una vez que tenés Python y pip, instalá la dependencia del juego:
 
 ```bash
-pip3 install rich
+python3 -m pip install rich
 ```
 
 ## Como ejecutar
@@ -27,8 +61,8 @@ python3 game.py --dificultad dificil
 El juego tiene 4 partes:
 
 - **Parte I** — introduccion narrativa al contexto biologico.
-- **Parte II** — dada una secuencia de ADN, escribis el ARNm resultante (recordá: T → U).
-- **Parte III** — el espliceosoma elimina los intrones automaticamente y te muestra el ARNm maduro.
+- **Parte II** — dada una hebra molde de ADN, obtenés la hebra codificante y luego la transcribis a ARNm.
+- **Parte III** — el espliceosoma elimina los intrones y te muestra el ARNm maduro.
 - **Parte IV** — identificas el codon de inicio, y para cada codon indicás el aminoacido y el anticodon del ARNt.
 
 En cualquier momento podés escribir `tabla` para ver el codigo genetico completo.
